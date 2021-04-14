@@ -2,7 +2,7 @@ CC=g++
 
 CFLAGS := -std=c++11 -I/opt/rocm/include -I./ -g 
 
-PROGRAMS :=  generate_configs  reorder_configs_bwd  reorder_configs_fwd
+PROGRAMS :=  generate_configs  reorder_configs_bwd  reorder_configs_fwd  
 
 all: $(PROGRAMS)
 

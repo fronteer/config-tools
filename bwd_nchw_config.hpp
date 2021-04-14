@@ -11,8 +11,7 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- *all
+ * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -127,7 +126,7 @@ void bwd_nchw_config::generate_configs(const char *precision, const char *config
          int tensor_a_soffset_sgprs; 
          int tensor_b_soffset_sgprs; 
 
-         int max_vector_size = std::string(precision) == "fp16" ? 8 : 4; 
+         int max_vector_size = (std::string(precision) == "fp16") ? 8 : 4; 
 
          for (int nxe=0; nxe < 2; nxe += 1)  {
               cfg.nxe = nxe;
@@ -212,7 +211,7 @@ void bwd_nchw_config::generate_configs(const char *precision, const char *config
                                     if ( unmerge_sub_n % cfg.tensor_b_thread_lengths[2] != 0) 
 					 break; 
 
-                                    configs.push_back(cfg);
+                                    this->configs.push_back(cfg);
                                     last_cfg_selected = true; 
                                 } while(0);
 
@@ -237,7 +236,7 @@ void bwd_nchw_config::generate_configs(const char *precision, const char *config
                                     if ( tensor_a_soffset_sgprs + tensor_b_soffset_sgprs > get_available_sgprs_for_soffset(true) )
                                          break;
 
-                                    configs.push_back(cfg);
+                                    this->configs.push_back(cfg);
                                 } while(0); 
                             };
 #endif                               
@@ -282,7 +281,7 @@ void bwd_nchw_config::generate_configs(const char *precision, const char *config
                                     if ( unmerge_sub_n % cfg.tensor_b_thread_lengths[2] != 0) 
 					 break; 
 
-                                    configs.push_back(cfg);
+                                    this->configs.push_back(cfg);
 
                                     last_cfg_selected = true;
                                 } while(0); 
@@ -308,7 +307,7 @@ void bwd_nchw_config::generate_configs(const char *precision, const char *config
                                     if ( tensor_a_soffset_sgprs + tensor_b_soffset_sgprs > get_available_sgprs_for_soffset(true) )
                                          break;
 
-                                    configs.push_back(cfg);
+                                    this->configs.push_back(cfg);
                                 } while(0);
                             };   // end of for(...)
 		        }
@@ -355,7 +354,7 @@ void bwd_nchw_config::generate_configs(const char *precision, const char *config
                                     if ( unmerge_sub_n % cfg.tensor_b_thread_lengths[2] != 0) 
 			                 break; 
 
-                                    configs.push_back(cfg); 
+                                    this->configs.push_back(cfg); 
                                 } while(0); 
 #if GENERATE_REDUCED_CONFIGS == 0
                                 // use dimension c1/n0 for thread slice for gemm_m/gemm_n
@@ -382,7 +381,7 @@ void bwd_nchw_config::generate_configs(const char *precision, const char *config
                                     if ( unmerge_sub_n % cfg.tensor_b_thread_lengths[2] != 0)
                                          break;
 
-                                    configs.push_back(cfg);
+                                    this->configs.push_back(cfg);
                                 } while(0);
 #endif				
 			    }; 
@@ -434,7 +433,7 @@ void bwd_nchw_config::generate_configs(const char *precision, const char *config
                                     if ( unmerge_sub_n % cfg.tensor_b_thread_lengths[2] != 0)
                                          break;
 
-                                    configs.push_back(cfg);
+                                    this->configs.push_back(cfg);
                                 } while(0);
 			    }; 
 		        }; 			

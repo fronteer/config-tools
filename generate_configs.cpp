@@ -11,8 +11,7 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- *all
+ * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -37,6 +36,7 @@
 #include <string>
 
 #include "bwd_nchw_config.hpp"
+#include "bwd_nhwc_config.hpp"
 #include "fwd_nchw_config.hpp"
 
 int main(int argc, char **argv)
@@ -71,6 +71,9 @@ int main(int argc, char **argv)
 
     if ( direction == "bwd" && layout == "nchw" ) 
          pConfig.reset( new bwd_nchw_config() ); 
+
+    if ( direction == "bwd" && layout == "nhwc" ) 
+         pConfig.reset( new bwd_nhwc_config() ); 
 
     if ( direction == "fwd" && layout == "nchw" ) 
          pConfig.reset( new fwd_nchw_config() ); 
