@@ -1,0 +1,12 @@
+
+ 
+    1. To generate configurations for fwd-fp16 or bwd-fp16 nchw
+
+       #> generate_configs fwd fp16 nchw ./tmp.config      
+       #> generate_configs bwd fp16 nchw ./tmp.config      
+
+    2. To re-order the configurations into the sequence that could be used by simple applicability validation
+
+       #> reorder_configs_bwd ./input.config  ./output.config 
+
+
