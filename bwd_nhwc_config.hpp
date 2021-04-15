@@ -105,7 +105,7 @@ void bwd_nhwc_config::generate_configs(const char *precision, const char *config
 	 cfg.tensor_b_cluster_lengths[0] = 1; 
 	 cfg.tensor_b_cluster_lengths[2] = 1; 
 
-         for (int nxe=0; nxe < 2; nxe += 1)  {
+         for (int nxe=0; nxe < 1; nxe += 1)  {
               cfg.nxe = nxe;
               cfg.nxb = 1;      // nxb is not used by bwd nhwc 
 
@@ -121,10 +121,13 @@ void bwd_nhwc_config::generate_configs(const char *precision, const char *config
 		   for (int k1_slice=min_k1_slice_size; k1_slice <= max_k1_slice_size; k1_slice *= 2) {
                         cfg.tensor_a_thread_lengths[1] = k1_slice; 
 		        cfg.tensor_a_cluster_lengths[0] = cfg.gemm_k_per_block / k1_slice; 
+                        if ( cfg.tensor_a_cluster_lengths[0] == 0 )
+			     continue; 
                         cfg.tensor_a_cluster_lengths[3] = blockSize / cfg.tensor_a_cluster_lengths[0]; 
+                        if ( cfg.tensor_a_cluster_lengths[3] == 0 )
+			     continue; 
                         cfg.tensor_a_thread_lengths[2] = cfg.gemm_m_per_block / cfg.tensor_a_cluster_lengths[3]; 
-
-                        if ( cfg.tensor_a_cluster_lengths[0] == 0 || cfg.tensor_a_cluster_lengths[3] == 0 || cfg.tensor_a_thread_lengths[2] == 0 )
+                        if ( cfg.tensor_a_thread_lengths[2] == 0 )
 			     continue; 
 
                         // for fp16, lower gemm_k dim size must be at least 4 so that the gemm_k_pack can be accurately implemented
@@ -134,10 +137,13 @@ void bwd_nhwc_config::generate_configs(const char *precision, const char *config
 			for (int c1_slice=min_c1_slice_size; c1_slice <= max_c1_slice_size; c1_slice *= 2) {
                              cfg.tensor_b_thread_lengths[3] = c1_slice; 
 			     cfg.tensor_b_cluster_lengths[3] = cfg.gemm_n_per_block / c1_slice; 
+                             if ( cfg.tensor_b_cluster_lengths[3] == 0 )
+				  continue;  
 			     cfg.tensor_b_cluster_lengths[1] = blockSize / cfg.tensor_b_cluster_lengths[3]; 
+                             if ( cfg.tensor_b_cluster_lengths[1] == 0 )
+				  continue;  
 			     cfg.tensor_b_thread_lengths[0] = cfg.gemm_k_per_block / cfg.tensor_b_cluster_lengths[1]; 
-
-                             if ( cfg.tensor_b_cluster_lengths[3] == 0 || cfg.tensor_b_cluster_lengths[1] == 0 || cfg.tensor_b_thread_lengths[0] == 0 )
+                             if ( cfg.tensor_b_thread_lengths[0] == 0 )
 				  continue;  
 
                              // for fp16, lower gemm_k dim size must be at least 4 so that the gemm_k_pack can be accurately implemented
@@ -157,7 +163,7 @@ void bwd_nhwc_config::generate_configs(const char *precision, const char *config
          };
     };
 
-    output_configurations(this->configs, "k0xk1ExC0xC1", "K0xK1ExN0xN1B", ofs);
+    output_configurations(this->configs, "EK2K0xK1xN0xN1B", "K0xK1K2ExC0xC1", ofs);
 
     std::cout << std::endl << this->configs.size() << " configs produced !" << std::endl;
 }; 
