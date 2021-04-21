@@ -105,7 +105,7 @@ void bwd_nhwc_config::generate_configs(const char *precision, const char *config
 	 cfg.tensor_b_cluster_lengths[0] = 1; 
 	 cfg.tensor_b_cluster_lengths[2] = 1; 
 
-         for (int nxe=0; nxe < 1; nxe += 1)  {
+         for (int nxe=0; nxe < 2; nxe += 1)  {
               cfg.nxe = nxe;
               cfg.nxb = 1;      // nxb is not used by bwd nhwc 
 
@@ -168,33 +168,45 @@ void bwd_nhwc_config::generate_configs(const char *precision, const char *config
     std::cout << std::endl << this->configs.size() << " configs produced !" << std::endl;
 }; 
 
-struct BwdNhwcSorterClass : public basic_config_sorter
+bool BwdNhwcSorter(igemm_gtc_tunable_t &cfg1, igemm_gtc_tunable_t &cfg2)
 {
-  bool operator()(igemm_gtc_tunable_t &cfg1, igemm_gtc_tunable_t &cfg2)
-  {
-     if ( cfg1.gemm_m_per_block > cfg2.gemm_m_per_block )
-          return(true);
-     if ( cfg1.gemm_m_per_block < cfg2.gemm_m_per_block )
-          return(false);
-
      // larger work-group size is preferred
-     int blockSize_1 = cfg1.tensor_b_cluster_lengths[1] * cfg1.tensor_b_cluster_lengths[3];
-     int blockSize_2 = cfg2.tensor_b_cluster_lengths[1] * cfg2.tensor_b_cluster_lengths[3];
+     int blockSize_1 = cfg1.tensor_a_cluster_lengths[0] * cfg1.tensor_a_cluster_lengths[3];
+     int blockSize_2 = cfg2.tensor_a_cluster_lengths[0] * cfg2.tensor_a_cluster_lengths[3];
 
      if ( blockSize_1 > blockSize_2 )
           return(true);
      if ( blockSize_1 < blockSize_2 )
           return(false);
 
-     // simutaneously accessing by more threads (bigger cluster size) on faster dimension could benefit the performance
-     if ( cfg1.tensor_b_cluster_lengths[3] > cfg2.tensor_b_cluster_lengths[3] )
+     if ( cfg1.gemm_n_per_block > cfg2.gemm_n_per_block )
           return(true);
-     if ( cfg1.tensor_b_cluster_lengths[3] < cfg2.tensor_b_cluster_lengths[3] )
+     if ( cfg1.gemm_n_per_block < cfg2.gemm_n_per_block )
+          return(false);
+
+/*     
+     // simutaneously accessing by more threads (bigger cluster size) on faster dimension could benefit the performance
+     if ( cfg1.tensor_a_cluster_lengths[3] > cfg2.tensor_a_cluster_lengths[3] )
+          return(true);
+     if ( cfg1.tensor_a_cluster_lengths[3] < cfg2.tensor_a_cluster_lengths[3] )
+          return(false);
+*/
+
+     // bigger size in ta_n0 is preferred since this leads to smaller space simultaneously accessed by threads in a warp
+     if ( cfg1.tensor_a_thread_lengths[2] > cfg2.tensor_a_thread_lengths[2] )
+          return(true);
+     if ( cfg1.tensor_a_thread_lengths[2] < cfg2.tensor_a_thread_lengths[2] )
           return(false);
 
      if ( cfg1.gemm_k_per_block > cfg2.gemm_k_per_block )
           return(true);
      if ( cfg1.gemm_k_per_block < cfg2.gemm_k_per_block )
+          return(false);
+
+     // bigger size in tb_k0 is preferred since this leads to smaller space simultaneously accessed by threads in a warp
+     if ( cfg1.tensor_b_thread_lengths[0] > cfg2.tensor_b_thread_lengths[0] )
+          return(true);
+     if ( cfg1.tensor_b_thread_lengths[0] < cfg2.tensor_b_thread_lengths[0] )
           return(false);
 
      // This is needed to ensure tunable with nxe==0 is selected for x=y=1 dilation_x=dilation_y=1, stride_x=stride_y=1, pad_x=pad_y=0
@@ -204,62 +216,25 @@ struct BwdNhwcSorterClass : public basic_config_sorter
      if ( cfg1.nxe > cfg2.nxe )
           return(false);
 
+     // The config which can use vector load/store on dim k1 is preferred 
+     if ( cfg1.tensor_a_thread_lengths[1] > cfg2.tensor_a_thread_lengths[1] )
+          return(true);
+     if ( cfg1.tensor_a_thread_lengths[1] < cfg2.tensor_a_thread_lengths[1] )
+          return(false);
+
+     // The config which can use vector load/store on dim c1 is preferred 
+     if ( cfg1.tensor_b_thread_lengths[3] > cfg2.tensor_b_thread_lengths[3] )
+          return(true);
+     if ( cfg1.tensor_b_thread_lengths[3] < cfg2.tensor_b_thread_lengths[3] )
+          return(false);
+
      if ( cfg1.wave_tile_k < cfg2.wave_tile_k )
           return(true);
 
      if ( cfg1.wave_tile_k > cfg2.wave_tile_k )
           return(false);
 
-     // The config which can use vector load/store on dim n1b is preferred 
-     if ( cfg1.nxe == 0 && cfg2.nxe == 0) {
-          if ( cfg1.tensor_b_thread_lengths[3] > cfg2.tensor_b_thread_lengths[3] )
-               return(true);
-          if ( cfg1.tensor_b_thread_lengths[3] < cfg2.tensor_b_thread_lengths[3] )
-               return(false);
-     };
-
-     // The config which can use vector load/store on dim c is preferred 
-     if ( cfg1.tensor_a_thread_lengths[3] > cfg2.tensor_a_thread_lengths[3] )
-          return(true);
-     if ( cfg1.tensor_a_thread_lengths[3] < cfg2.tensor_a_thread_lengths[3] )
-          return(false);
-
-     // for bwd-fp16, having thread slice on k0 or k1e has differrent meaning (pack_d0 or not)
-     if ( cfg1.tensor_b_thread_lengths[3] > 1 && cfg2.tensor_b_thread_lengths[3] > 1 ) {
-          // if vector load is used on n1b, we prefer to pack k1 
-          if ( cfg1.tensor_b_thread_lengths[1] > cfg2.tensor_b_thread_lengths[1] )
-               return(true);
-          if ( cfg1.tensor_b_thread_lengths[1] < cfg2.tensor_b_thread_lengths[1] )
-               return(false);
-     }
-     else {
-          // if vector load is not used on n1b, we prefer to have slice on k0 instead of k1, so that
-          // simulaneously access by multiple lanes cover smaller address space (better L2 hit)
-          if ( cfg1.tensor_b_thread_lengths[1] < cfg2.tensor_b_thread_lengths[1] )
-               return(true);
-          if ( cfg1.tensor_b_thread_lengths[1] > cfg2.tensor_b_thread_lengths[1] )
-               return(false);
-     };
-
-     // for bwd-fp16, having thread slice on k0 or k1e has differrent meaning (pack_d0 or not)
-     if ( cfg1.tensor_a_thread_lengths[3] > 1 && cfg2.tensor_a_thread_lengths[3] > 1 ) {
-          // if vector load is used on c1, we prefer to pack k1 
-          if ( cfg1.tensor_a_thread_lengths[1] > cfg2.tensor_a_thread_lengths[1] )
-               return(true);
-          if ( cfg1.tensor_a_thread_lengths[1] < cfg2.tensor_a_thread_lengths[1] )
-               return(false);
-     }
-     else {
-          // if vector load is not used on c1, we prefer to have slice on k0 instead of k1, so that
-          // simulaneously access by multiple lanes cover smaller address space (better L2 hit)
-          if ( cfg1.tensor_a_thread_lengths[1] < cfg2.tensor_a_thread_lengths[1] )
-               return(true);
-          if ( cfg1.tensor_a_thread_lengths[1] > cfg2.tensor_a_thread_lengths[1] )
-               return(false);
-     };
-
      return(false);
-  };
 };
 
 #endif

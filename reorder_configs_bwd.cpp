@@ -33,22 +33,17 @@
 #include <memory>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
 #include "config_parser.hpp"
 #include "igemm_gtc_base.hpp"
 
 #include "bwd_nchw_config.hpp"
+#include "bwd_nhwc_config.hpp"
 #include "fwd_nchw_config.hpp"
 
-// Give more importance to gemm_n than gemm_m
-//static std::pair<int,int> macro_tiles[] = { {128,256}, {256,128}, {64,256}, {128,128}, {256,64}, {32,256}, {64,128}, {128,64}, {256,32}, {16,256}, {32,128}, {64,64}, {128,32},
-//                                            {256,16}, {16,128}, {32,64}, {64,32}, {128,16}, {16,64}, {32,32}, {64,16}, {8,64}, {16,32}, {32,16}, {64,8}, {4,64}, {16,16}, {64,4} };
 
-static std::pair<int,int> macro_tiles[] = { {256,128}, {128, 256}, {64,256}, {128,128}, {256,64}, {32,256}, {64,128}, {128,64}, {256,32}, {16,256}, {32,128}, {64,64}, {128,32},
-                                            {256,16}, {16,128}, {32,64}, {64,32}, {128,16}, {16,64}, {32,32}, {64,16}, {8,64}, {16,32}, {32,16}, {64,8}, {4,64}, {16,16}, {64,4} };
-
-                                            
-#define NUM_MACRO_TILES (sizeof(macro_tiles)/sizeof(macro_tiles[0]))
+static bool simpleSorter(int i,int j) { return (i>j); }; 
 
 static std::vector<igemm_gtc_tunable_t> ordered_configs; 
 
@@ -76,6 +71,8 @@ int main(int argc, char **argv)
     std::string direction(tunables[0].direction);
     std::string precision(tunables[0].precision); 
     std::string layout(tunables[0].tensor_layout);
+
+    std::cout << std::endl << "layout = " << layout << std::endl; 
 
     // "indexed_configs" is used to classify the configs according to the size of the macro-tile
     std::map< int, std::vector<igemm_gtc_tunable_t> > indexed_configs; 
@@ -107,7 +104,7 @@ int main(int argc, char **argv)
 
     fprintf(stdout, "%d configurations checked\n", count); 
 
-    basic_config_sorter* pSorter = new BwdNchwSorterClass(); 
+    std::sort(mt_sizes.begin(), mt_sizes.end(), simpleSorter); 
 
     for (auto mt : mt_sizes) {
          it = indexed_configs.find(mt);
@@ -115,7 +112,11 @@ int main(int argc, char **argv)
          if ( it != indexed_configs.end() ) {
               fprintf(stdout, "Macro-tile %d, number of configurations %d\n", mt, (int)it->second.size());
 
-              std::sort(it->second.begin(), it->second.end(), *reinterpret_cast<BwdNchwSorterClass*>(pSorter));
+              if ( layout == "nchw" ) 
+                   std::sort(it->second.begin(), it->second.end(), BwdNchwSorter);
+              else 
+              if ( layout == "nhwc" )  	
+                   std::sort(it->second.begin(), it->second.end(), BwdNhwcSorter);
 
               for (const auto&  tunable : it->second)
                    ordered_configs.push_back(tunable);
@@ -124,6 +125,10 @@ int main(int argc, char **argv)
 
     fprintf(stdout, "\nSize of the orderred configs array %d\n", (int)ordered_configs.size()); 
 
-    output_configurations(ordered_configs, "k0xk1ExC0xC1", "K0xK1ExN0xN1B", ofs);
+    if ( layout == "nchw" )
+         output_configurations(ordered_configs, "k0xk1ExC0xC1", "K0xK1ExN0xN1B", ofs);
+    else 
+    if ( layout == "nhwc" )
+         output_configurations(ordered_configs, "EK2K0xK1xN0xN1B","K0xK1K2ExC0xC1", ofs);
 };
 

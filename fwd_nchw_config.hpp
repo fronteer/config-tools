@@ -193,10 +193,8 @@ void fwd_nchw_config::generate_configs(const char *precision, const char *config
     std::cout << std::endl << this->configs.size() << " configs produced !" << std::endl;
 };
 
-struct FwdNchwSorterClass : public basic_config_sorter
+bool FwdNchwSorter(igemm_gtc_tunable_t &cfg1, igemm_gtc_tunable_t &cfg2)
 {
-  bool operator()(igemm_gtc_tunable_t &cfg1, igemm_gtc_tunable_t &cfg2)
-  {
      // it seems larger size of gemm_k_per_block is not very helpful ?
      if ( cfg1.gemm_k_per_block > cfg2.gemm_k_per_block )
           return(true);
@@ -242,7 +240,6 @@ struct FwdNchwSorterClass : public basic_config_sorter
           return(false);
 
      return(false);
-  };
 }; 
 
 #endif

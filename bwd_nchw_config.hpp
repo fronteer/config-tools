@@ -447,10 +447,8 @@ void bwd_nchw_config::generate_configs(const char *precision, const char *config
     std::cout << std::endl << this->configs.size() << " configs produced !" << std::endl;
 }; 
 
-struct BwdNchwSorterClass : public basic_config_sorter
+bool BwdNchwSorter(igemm_gtc_tunable_t &cfg1, igemm_gtc_tunable_t &cfg2)
 {
-  bool operator()(igemm_gtc_tunable_t &cfg1, igemm_gtc_tunable_t &cfg2)
-  {
      if ( cfg1.gemm_m_per_block > cfg2.gemm_m_per_block )
           return(true);
      if ( cfg1.gemm_m_per_block < cfg2.gemm_m_per_block )
@@ -543,7 +541,6 @@ struct BwdNchwSorterClass : public basic_config_sorter
      };
 
      return(false);
-  };
 };
 
 #endif

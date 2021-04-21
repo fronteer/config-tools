@@ -104,16 +104,17 @@ int main(int argc, char **argv)
 
     fprintf(stdout, "%d configurations checked\n", count); 
 
-    basic_config_sorter* pSorter = new BwdNchwSorterClass(); 
-
-    for (int i=0; i < NUM_MACRO_TILES; i++) {
-         auto mt = macro_tiles[i];
+    for (auto mt : macro_tiles) {
          it = indexed_configs.find(mt);
 
          if ( it != indexed_configs.end() ) {
               fprintf(stdout, "Macro-tile [%d,%d], number of configurations %d\n", it->first.first, it->first.second, (int)it->second.size());
 
-              std::sort(it->second.begin(), it->second.end(), *reinterpret_cast<BwdNchwSorterClass*>(pSorter));
+              if ( layout == "nchw" )
+                   std::sort(it->second.begin(), it->second.end(), FwdNchwSorter);
+              else
+	      if ( layout == "nhwc" )
+	           throw std::runtime_error("Not implemented at present"); 
 
               for (const auto&  tunable : it->second)
                    ordered_configs.push_back(tunable);
@@ -122,6 +123,10 @@ int main(int argc, char **argv)
 
     fprintf(stdout, "\nSize of the orderred configs array %d\n", (int)ordered_configs.size()); 
 
-    output_configurations(ordered_configs, "C0xC1ExK0xK1", "C0xC1ExN0xN1B", ofs); 
+    if ( layout == "nchw" )
+         output_configurations(ordered_configs, "C0xC1ExK0xK1", "C0xC1ExN0xN1B", ofs); 
+    else 
+    if ( layout == "nhwc" )
+	 throw std::runtime_error("Not implemented at present"); 
 };
 

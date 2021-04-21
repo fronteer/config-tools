@@ -298,11 +298,13 @@ public:
 private:
 };
 
+/*
 struct basic_config_sorter
 {
 public:
    virtual bool operator()(igemm_gtc_tunable_t &cfg1, igemm_gtc_tunable_t &cfg2) { return true; };  
 }; 
+*/
 
 #endif
 
