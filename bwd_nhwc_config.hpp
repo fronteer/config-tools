@@ -184,13 +184,17 @@ bool BwdNhwcSorter(igemm_gtc_tunable_t &cfg1, igemm_gtc_tunable_t &cfg2)
      if ( cfg1.gemm_n_per_block < cfg2.gemm_n_per_block )
           return(false);
 
-/*     
-     // simutaneously accessing by more threads (bigger cluster size) on faster dimension could benefit the performance
-     if ( cfg1.tensor_a_cluster_lengths[3] > cfg2.tensor_a_cluster_lengths[3] )
+     // The config which can use vector load/store on dim k1 is preferred 
+     if ( cfg1.tensor_a_thread_lengths[1] > cfg2.tensor_a_thread_lengths[1] )
           return(true);
-     if ( cfg1.tensor_a_cluster_lengths[3] < cfg2.tensor_a_cluster_lengths[3] )
+     if ( cfg1.tensor_a_thread_lengths[1] < cfg2.tensor_a_thread_lengths[1] )
           return(false);
-*/
+
+     // The config which can use vector load/store on dim c1 is preferred 
+     if ( cfg1.tensor_b_thread_lengths[3] > cfg2.tensor_b_thread_lengths[3] )
+          return(true);
+     if ( cfg1.tensor_b_thread_lengths[3] < cfg2.tensor_b_thread_lengths[3] )
+          return(false);
 
      // bigger size in ta_n0 is preferred since this leads to smaller space simultaneously accessed by threads in a warp
      if ( cfg1.tensor_a_thread_lengths[2] > cfg2.tensor_a_thread_lengths[2] )
@@ -216,22 +220,10 @@ bool BwdNhwcSorter(igemm_gtc_tunable_t &cfg1, igemm_gtc_tunable_t &cfg2)
      if ( cfg1.nxe > cfg2.nxe )
           return(false);
 
-     // The config which can use vector load/store on dim k1 is preferred 
-     if ( cfg1.tensor_a_thread_lengths[1] > cfg2.tensor_a_thread_lengths[1] )
+     if ( cfg1.wave_tile_k > cfg2.wave_tile_k )
           return(true);
-     if ( cfg1.tensor_a_thread_lengths[1] < cfg2.tensor_a_thread_lengths[1] )
-          return(false);
-
-     // The config which can use vector load/store on dim c1 is preferred 
-     if ( cfg1.tensor_b_thread_lengths[3] > cfg2.tensor_b_thread_lengths[3] )
-          return(true);
-     if ( cfg1.tensor_b_thread_lengths[3] < cfg2.tensor_b_thread_lengths[3] )
-          return(false);
 
      if ( cfg1.wave_tile_k < cfg2.wave_tile_k )
-          return(true);
-
-     if ( cfg1.wave_tile_k > cfg2.wave_tile_k )
           return(false);
 
      return(false);
