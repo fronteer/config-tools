@@ -65,30 +65,36 @@ typedef struct {
 // The mappings are strictly ranked in macro-tile sizes (gemm_m_per_block, gemm_n_per_block)
 static xdlops_mapping_t xdlops_mappings_fp16[] = {
         { 256, 128,  64,  32,  4, 4,  2,  2,  1,  1,  },
+#if USE_REDUCED_XDLOPS_MAPPINGS	== 0
         { 256, 128,  32,  32,  8, 4,  2,  2,  2,  1,  },
+#endif	
         { 128, 256,  32,  64,  4, 4,  2,  2,  1,  1,  },
+#if USE_REDUCED_XDLOPS_MAPPINGS	== 0
         { 128, 256,  32,  32,  8, 4,  2,  2,  1,  2,  },
+#endif	
         { 256, 64 ,  64,  16,  4, 4,  2,  2,  1,  1,  },
         { 128, 128,  32,  32,  4, 4,  2,  2,  1,  1,  },
+#if USE_REDUCED_XDLOPS_MAPPINGS	== 0
         { 128, 128,  32,  32,  8, 4,  2,  2,  1,  1,  },
         { 128, 128,  16,  16, 16, 4,  2,  2,  2,  2,  },	
-#if USE_REDUCED_XDLOPS_MAPPINGS	== 0
         { 128, 128,  32,  64,  4, 4,  1,  1,  2,  1,  },
 #endif	
         { 64 , 256,  16,  64,  4, 4,  2,  2,  1,  1,  },
 #if USE_REDUCED_XDLOPS_MAPPINGS == 0	
         { 64 , 256,  32,  64,  4, 4,  1,  1,  1,  2,  },
-#endif
         { 64 , 256,  32,  32,  8, 4,  2,  2,  1,  1,  }, 
+#endif
         { 256, 32 ,  64,  4 ,  4, 4,  2,  2,  1,  2,  },
+#if USE_REDUCED_XDLOPS_MAPPINGS	== 0
         { 128, 64,   16,  16, 16, 4,  2,  2,  2,  1,  },
+#endif	
         { 128, 64 ,  32,  8 ,  4, 4,  2,  2,  1,  2,  },
         { 64 , 128,  8 ,  32,  4, 4,  2,  2,  2,  1,  },
 #if USE_REDUCED_XDLOPS_MAPPINGS	== 0
         { 64 , 128,  32,  64,  4, 4,  1,  1,  1,  1,  },
         { 64 , 128,  64,  32,  4, 4,  1,  1,  1,  1,  },
-#endif	
         { 64 , 128,  32,  32,  8, 4,  1,  1,  1,  2,  },
+#endif	
         { 32 , 256,  4 ,  64,  4, 4,  2,  2,  2,  1,  },
         { 256, 16 ,  64,  4 ,  4, 4,  2,  2,  1,  1,  },
         { 128, 32 ,  32,  8 ,  4, 4,  2,  2,  1,  1,  },
@@ -111,7 +117,9 @@ static xdlops_mapping_t xdlops_mappings_fp16[] = {
         { 64 , 16 ,  64,  4 ,  4, 2,  1,  1,  1,  2,  },
 #endif
         { 32 , 32 ,  16,  16,  4, 4,  1,  1,  1,  1,  },
+#if USE_REDUCED_XDLOPS_MAPPINGS	== 0
         { 32 , 32 ,  16,  16, 16, 4,  1,  1,  1,  1,  },
+#endif
         { 16 , 64 ,  4 ,  64,  4, 4,  1,  1,  1,  1,  },
 #if USE_REDUCED_XDLOPS_MAPPINGS	== 0
         { 16 , 64 ,  4 ,  64,  4, 2,  1,  1,  2,  1,  },
